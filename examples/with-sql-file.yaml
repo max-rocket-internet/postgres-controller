@@ -1,0 +1,12 @@
+apiVersion: postgresql.org/v1
+kind: PostgresDatabase
+metadata:
+  name: app4
+spec:
+  dbName: db4
+  dbRoleName: user4
+  dbRolePassword: swordfish
+  dbExtensions:
+    - hstore
+  extraSQL: |
+{{ .Files.Get "extra.sql" | indent 4 }}

@@ -1,0 +1,2 @@
+kubernetes==8.0.0a1
+psycopg2-binary==2.7.5

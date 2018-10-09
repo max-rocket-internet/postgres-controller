@@ -1,0 +1,36 @@
+postgres:
+  host: ""
+  user: ""
+  password: ""
+  port: "5432"
+  db_name: postgres
+  drop_on_deletion: false
+
+replicaCount: 1
+
+image:
+  repository: futurish/postgres-controller
+  tag: 0.1
+  #pullPolicy: IfNotPresent
+  pullPolicy: Always
+
+nameOverride: ""
+fullnameOverride: ""
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+rbac:
+  create: true
+
+serviceAccount:
+  # Specifies whether a ServiceAccount should be created
+  create: true
+  # The name of the ServiceAccount to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:

@@ -1,0 +1,62 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ include "postgres-controller.fullname" . }}
+  labels:
+    app: {{ template "postgres-controller.name" . }}
+    chart: {{ template "postgres-controller.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "postgres-controller.name" . }}
+    helm.sh/chart: {{ include "postgres-controller.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "postgres-controller.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "postgres-controller.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app: {{ template "postgres-controller.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: DB_HOST
+              value: "{{ .Values.postgres.host }}"
+            - name: DB_PORT
+              value: "{{ .Values.postgres.port }}"
+            - name: DB_NAME
+              value: "{{ .Values.postgres.db_name }}"
+            - name: DB_USER
+              value: "{{ .Values.postgres.user }}"
+            - name: DROP_ON_DELETION
+              value: "{{ .Values.postgres.drop_on_deletion }}"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "postgres-controller.fullname" . }}
+                  key: db_password
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+    {{- end }}
+    {{- if .Values.tolerations }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+    {{- end }}
+    {{- if .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+    {{- end }}
+      serviceAccountName: {{ template "postgres-controller.serviceAccountName" . }}

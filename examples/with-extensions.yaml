@@ -1,0 +1,10 @@
+apiVersion: postgresql.org/v1
+kind: PostgresDatabase
+metadata:
+  name: app2
+spec:
+  dbName: db2
+  dbRoleName: user2
+  dbRolePassword: swordfish
+  dbExtensions:
+    - hstore

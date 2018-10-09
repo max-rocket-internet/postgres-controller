@@ -1,0 +1,15 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app: {{ template "postgres-controller.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  name: {{ template "postgres-controller.fullname" . }}
+rules:
+  - apiGroups: ["postgresql.org"]
+    resources: ["pgdatabases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+{{- end -}}

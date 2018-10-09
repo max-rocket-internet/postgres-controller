@@ -1,0 +1,13 @@
+apiVersion: postgresql.org/v1
+kind: PostgresDatabase
+metadata:
+  name: app3
+spec:
+  dbName: db3
+  dbRoleName: user3
+  dbRolePassword: swordfish
+  dbExtensions:
+    - hstore
+  extraSQL: |
+    SELECT * FROM pg_stat_activity;
+    SELECT * FROM pg_stat_database;
