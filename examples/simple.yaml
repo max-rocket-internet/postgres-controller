@@ -6,3 +6,6 @@ spec:
   dbName: db1
   dbRoleName: user1
   dbRolePassword: swordfish
+  onDeletion:
+    dropDB: false
+    dropRole: false

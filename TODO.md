@@ -5,7 +5,6 @@
 - Reduce docker image size
 - Add update events of `PostgresDatabase` resources
 - Error checking x1000
-- Add proper logging instead of `print`
 - Add command line arguments
 
 Features:
@@ -13,3 +12,4 @@ Features:
 - Add CRD for managing Postgres roles
 - Allow different access permissions for role
 - Allow per DB deletion option using annotation
+- Handle `MODIFIED` type of events?

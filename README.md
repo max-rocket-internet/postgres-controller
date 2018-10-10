@@ -4,7 +4,7 @@ A simple controller and helm chart to manage Postgres databases in an existing P
 
 Example resource that will create a database and role with access:
 
-```
+```yaml
 apiVersion: postgresql.org/v1
 kind: PostgresDatabase
 metadata:
@@ -20,7 +20,7 @@ spec:
 Use the included [Helm](https://helm.sh/) chart and be sure you set the host, username and password for your Postgres instance:
 
 ```
-helm install ./chart --set postgres.host=my-rds-instance.rds.amazonaws.com --set postgres.user=root --set postgres.password=swordfish
+helm install ./chart --set postgres.host=my-rds-instance.rds.amazonaws.com --set postgres.user=root --set postgres.password=admin_password
 ```
 
 ### Examples
@@ -47,4 +47,10 @@ Run the controller
 
 ```
 ./controller.py
+```
+
+Create or change some resources:
+
+```
+kubectl apply -f examples/simple.yaml
 ```

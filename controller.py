@@ -3,19 +3,20 @@
 from kubernetes import client, watch
 import psycopg2
 import json
-from functions import get_config, process_event
+from functions import get_config, process_event, create_logger
 
 
 runtime_config = get_config()
 crds = client.CustomObjectsApi()
 conn = psycopg2.connect(**runtime_config['db_credentials'])
+logger = create_logger(log_level=runtime_config['log_level'])
 
 
 resource_version = ''
 
 if __name__ == "__main__":
     while True:
-        print('postgres-controller initializing')
+        logger.info('postgres-controller initializing')
         stream = watch.Watch().stream(crds.list_cluster_custom_object, 'postgresql.org', 'v1', 'pgdatabases', resource_version=resource_version)
         try:
             for event in stream:
@@ -25,16 +26,12 @@ if __name__ == "__main__":
                 spec = obj.get('spec')
 
                 if not metadata or not spec:
-                    print('No metadata or spec in object, skipping: {0}'.format(json.dumps(obj, indent=1)))
-                    continue
-
-                if event_type == 'DELETED' and runtime_config['drop_on_deletion'] == False:
-                    print('ignoring deletion for DB {0} because DROP_ON_DELETION is not enabled'.format(metadata['name']))
+                    logger.error('No metadata or spec in object, skipping: {0}'.format(json.dumps(obj, indent=1)))
                     continue
 
                 if metadata['resourceVersion'] is not None:
                     resource_version = metadata['resourceVersion']
-                    print(resource_version)
+                    logger.debug('resourceVersion now: {0}'.format(resource_version))
 
                 process_event(conn, crds, obj, event_type)
 
