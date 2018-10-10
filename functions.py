@@ -70,7 +70,7 @@ def create_db_if_not_exists(cur, db_name):
     if not cur.fetchone():
         cur.execute("CREATE DATABASE {};".format(db_name))
     else:
-        logger.debug('DB {0} already exists'.format(db_name))
+        logger.debug('Database {0} already exists'.format(db_name))
 
 
 def create_role_not_exists(cur, role_name, role_password):
@@ -96,6 +96,15 @@ def process_event(conn, crds, obj, event_type):
     logger.debug('Processing event: {0}'.format(json.dumps(obj, indent=1)))
 
 
+    if event_type == 'MODIFIED':
+        logger.debug('Ignoring modification for {0} DB {1}, not supported'.format(metadata.get('name'), spec['dbName']))
+        return
+
+
+    cur = conn.cursor()
+    conn.set_session(autocommit=True)
+
+
     if event_type == 'DELETED':
         logger.info('Deleting PostgresDatabase {0}, dbName {1}'.format(metadata.get('name'), spec['dbName']))
         try:
@@ -104,21 +113,23 @@ def process_event(conn, crds, obj, event_type):
             drop_db = False
         if drop_db:
             logger.info('Dropping {0} DB {1}'.format(metadata.get('name'), spec['dbName']))
-            # Do drop
+            cur.execute("DROP DATABASE {0};".format(spec['dbName']))
         else:
-            logger.debug('Ignoring deletion for {0} DB {1}, no onDeletion settings present'.format(metadata.get('name'), spec['dbName']))
+            logger.info('Ignoring deletion for {0} database {1}, onDeletion setting not enabled'.format(metadata.get('name'), spec['dbName']))
 
-
-    elif event_type == 'MODIFIED':
-        logger.debug('Ignoring modification for {0} DB {1}, not supported'.format(metadata.get('name'), spec['dbName']))
+        try:
+            drop_role = spec['onDeletion']['dropRole']
+        except KeyError:
+            drop_db = False
+        if drop_role:
+            logger.info('Dropping {0} role {1}'.format(metadata.get('name'), spec['dbRoleName']))
+            cur.execute("DROP ROLE {0};".format(spec['dbRoleName']))
+        else:
+            logger.info('Ignoring deletion for {0} role {1}, onDeletion setting not enabled'.format(metadata.get('name'), spec['dbName']))
 
 
     elif event_type == 'ADDED':
         logger.info('Adding PostgresDatabase {0}, dbName {1}'.format(metadata.get('name'), spec['dbName']))
-
-        cur = conn.cursor()
-        conn.set_session(autocommit=True)
-
         create_db_if_not_exists(cur, spec['dbName'])
         create_role_not_exists(cur, spec['dbRoleName'], spec['dbRolePassword'])
         cur.execute("GRANT ALL PRIVILEGES ON DATABASE {0} to {1};".format(spec['dbName'], spec['dbRoleName']))
@@ -133,4 +144,4 @@ def process_event(conn, crds, obj, event_type):
             cur.execute(spec['extraSQL'])
             conn.commit()
 
-        cur.close()
+    cur.close()
