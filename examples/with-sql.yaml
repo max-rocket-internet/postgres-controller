@@ -9,7 +9,7 @@ spec:
   dbExtensions:
     - hstore
   extraSQL: |
-    CREATE TABLE example(
+    CREATE TABLE example (
       user_id serial PRIMARY KEY,
       username VARCHAR (50) UNIQUE NOT NULL,
       email VARCHAR (355) UNIQUE NOT NULL

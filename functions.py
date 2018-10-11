@@ -154,8 +154,13 @@ def process_event(crds, obj, event_type, runtime_config):
 
             if 'extraSQL' in spec:
                 db_conn.set_session(autocommit=False)
-                db_cur.execute(spec['extraSQL'])
-                db_conn.commit()
+                try:
+                    db_cur.execute(spec['extraSQL'])
+                    db_conn.commit()
+                except psycopg2.OperationalError as e:
+                    logger.error('OperationalError when running extraSQL from {0} for DB {1}: {2}'.format(metadata.get('name'), spec['dbName'], e))
+                except psycopg2.ProgrammingError as e:
+                    logger.error('ProgrammingError when running extraSQL from {0} for DB {1}: {2}'.format(metadata.get('name'), spec['dbName'], e))
 
             db_cur.close()
 
