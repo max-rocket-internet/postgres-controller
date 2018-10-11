@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 
 from kubernetes import client, watch
-import psycopg2
 import json
 from functions import get_config, process_event, create_logger
 
 
 runtime_config = get_config()
 crds = client.CustomObjectsApi()
-conn = psycopg2.connect(**runtime_config['db_credentials'])
 logger = create_logger(log_level=runtime_config['log_level'])
 
 
@@ -33,7 +31,7 @@ if __name__ == "__main__":
                     resource_version = metadata['resourceVersion']
                     logger.debug('resourceVersion now: {0}'.format(resource_version))
 
-                process_event(conn, crds, obj, event_type)
+                process_event(crds, obj, event_type, runtime_config)
 
         except client.rest.ApiException as e:
             if e.status == 404:

@@ -34,8 +34,6 @@ spec:
               value: "{{ .Values.postgres.host }}"
             - name: DB_PORT
               value: "{{ .Values.postgres.port }}"
-            - name: DB_NAME
-              value: "{{ .Values.postgres.db_name }}"
             - name: DB_USER
               value: "{{ .Values.postgres.user }}"
             - name: DROP_ON_DELETION
@@ -45,6 +43,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "postgres-controller.fullname" . }}
                   key: db_password
+            - name: LOG_LEVEL
+              value: "{{ .Values.log_level }}"
           resources:
 {{ toYaml .Values.resources | indent 12 }}
     {{- if .Values.nodeSelector }}

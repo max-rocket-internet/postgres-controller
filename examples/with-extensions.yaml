@@ -8,3 +8,6 @@ spec:
   dbRolePassword: swordfish
   dbExtensions:
     - hstore
+  onDeletion:
+    dropDB: true
+    dropRole: true

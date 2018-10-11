@@ -4,6 +4,7 @@ import os
 import json
 from kubernetes import config
 import logging
+import psycopg2
 import logging.handlers
 
 
@@ -52,7 +53,6 @@ def get_config():
         'db_credentials': {
             'host': os.environ['DB_HOST'],
             'port': os.getenv('DB_PORT', 5432),
-            'dbname': os.getenv('DB_NAME', 'postgres'),
             'user': os.environ['DB_USER'],
             'password': os.environ['DB_PASSWORD'],
         },
@@ -84,7 +84,7 @@ def create_role_not_exists(cur, role_name, role_password):
         logger.debug('Role {0} already exists'.format(role_name))
 
 
-def process_event(conn, crds, obj, event_type):
+def process_event(crds, obj, event_type, runtime_config):
     '''
     Processes events in order to create or drop databases
     '''
@@ -100,7 +100,7 @@ def process_event(conn, crds, obj, event_type):
         logger.debug('Ignoring modification for {0} DB {1}, not supported'.format(metadata.get('name'), spec['dbName']))
         return
 
-
+    conn = psycopg2.connect(**runtime_config['db_credentials'])
     cur = conn.cursor()
     conn.set_session(autocommit=True)
 
@@ -134,14 +134,21 @@ def process_event(conn, crds, obj, event_type):
         create_role_not_exists(cur, spec['dbRoleName'], spec['dbRolePassword'])
         cur.execute("GRANT ALL PRIVILEGES ON DATABASE {0} to {1};".format(spec['dbName'], spec['dbRoleName']))
 
-        if spec.get('dbExtensions'):
-            for ext in spec['dbExtensions']:
-                logger.info('Creating extension {0} in DB {1}'.format(ext, spec['dbName']))
-                cur.execute("CREATE EXTENSION IF NOT EXISTS {0};".format(ext))
+        if 'dbExtensions' in spec or 'extraSQL' in spec:
+            db_conn = psycopg2.connect(**{**runtime_config['db_credentials'], **{'dbname': spec['dbName']}})
+            db_cur = db_conn.cursor()
 
-        if spec.get('extraSQL'):
-            conn.set_session(autocommit=False)
-            cur.execute(spec['extraSQL'])
-            conn.commit()
+            if 'dbExtensions' in spec:
+                db_conn.set_session(autocommit=True)
+                for ext in spec['dbExtensions']:
+                    logger.info('Creating extension {0} in DB {1}'.format(ext, spec['dbName']))
+                    db_cur.execute("CREATE EXTENSION IF NOT EXISTS {0};".format(ext))
+
+            if 'extraSQL' in spec:
+                db_conn.set_session(autocommit=False)
+                db_cur.execute(spec['extraSQL'])
+                db_conn.commit()
+
+            db_cur.close()
 
     cur.close()

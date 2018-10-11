@@ -47,8 +47,7 @@ The following table lists the configurable parameters for this chart and their d
 | `postgres.host`                    | Postgres hostname               | `NULL`                           |
 | `postgres.user`                    | Postgres user                   | `NULL`                           |
 | `postgres.password`                | Postgres password               | `NULL`                           |
-
-drop_on_deletion
+| `log_level`                        | Log level for controller        | `info`                           |
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install` or provide a YAML file containing the values for the above parameters:
 
