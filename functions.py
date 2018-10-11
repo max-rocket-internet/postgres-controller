@@ -69,8 +69,10 @@ def create_db_if_not_exists(cur, db_name):
     cur.execute("SELECT 1 FROM pg_database WHERE datname = '{}';".format(db_name))
     if not cur.fetchone():
         cur.execute("CREATE DATABASE {};".format(db_name))
+        return True
     else:
         logger.debug('Database {0} already exists'.format(db_name))
+        return False
 
 
 def create_role_not_exists(cur, role_name, role_password):
@@ -80,8 +82,10 @@ def create_role_not_exists(cur, role_name, role_password):
     cur.execute("SELECT 1 FROM pg_roles WHERE rolname = '{}';".format(role_name))
     if not cur.fetchone():
         cur.execute("CREATE ROLE {0} PASSWORD '{1}' LOGIN;".format(role_name, role_password))
+        return True
     else:
         logger.debug('Role {0} already exists'.format(role_name))
+        return False
 
 
 def process_event(crds, obj, event_type, runtime_config):
@@ -95,6 +99,7 @@ def process_event(crds, obj, event_type, runtime_config):
 
     logger.debug('Processing event: {0}'.format(json.dumps(obj, indent=1)))
 
+    print(event_type)
 
     if event_type == 'MODIFIED':
         logger.debug('Ignoring modification for {0} DB {1}, not supported'.format(metadata.get('name'), spec['dbName']))
@@ -113,14 +118,17 @@ def process_event(crds, obj, event_type, runtime_config):
             drop_db = False
         if drop_db:
             logger.info('Dropping {0} DB {1}'.format(metadata.get('name'), spec['dbName']))
-            cur.execute("DROP DATABASE {0};".format(spec['dbName']))
+            try:
+                cur.execute("DROP DATABASE {0};".format(spec['dbName']))
+            except psycopg2.OperationalError as e:
+                logger.info('Dropping of {0} DB {1} failed {2}'.format(metadata.get('name'), spec['dbName'], e))
         else:
             logger.info('Ignoring deletion for {0} database {1}, onDeletion setting not enabled'.format(metadata.get('name'), spec['dbName']))
 
         try:
             drop_role = spec['onDeletion']['dropRole']
         except KeyError:
-            drop_db = False
+            drop_role = False
         if drop_role:
             logger.info('Dropping {0} role {1}'.format(metadata.get('name'), spec['dbRoleName']))
             cur.execute("DROP ROLE {0};".format(spec['dbRoleName']))
@@ -130,11 +138,11 @@ def process_event(crds, obj, event_type, runtime_config):
 
     elif event_type == 'ADDED':
         logger.info('Adding PostgresDatabase {0}, dbName {1}'.format(metadata.get('name'), spec['dbName']))
-        create_db_if_not_exists(cur, spec['dbName'])
-        create_role_not_exists(cur, spec['dbRoleName'], spec['dbRolePassword'])
+        db_created = create_db_if_not_exists(cur, spec['dbName'])
+        role_created = create_role_not_exists(cur, spec['dbRoleName'], spec['dbRolePassword'])
         cur.execute("GRANT ALL PRIVILEGES ON DATABASE {0} to {1};".format(spec['dbName'], spec['dbRoleName']))
 
-        if 'dbExtensions' in spec or 'extraSQL' in spec:
+        if ('dbExtensions' in spec or 'extraSQL' in spec) and db_created:
             db_conn = psycopg2.connect(**{**runtime_config['db_credentials'], **{'dbname': spec['dbName']}})
             db_cur = db_conn.cursor()
 
