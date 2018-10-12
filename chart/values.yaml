@@ -6,13 +6,14 @@ postgres:
   db_name: postgres
   drop_on_deletion: false
 
+log_level: 'info'
+
 replicaCount: 1
 
 image:
   repository: futurish/postgres-controller
   tag: 0.1
-  #pullPolicy: IfNotPresent
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
 
 nameOverride: ""
 fullnameOverride: ""

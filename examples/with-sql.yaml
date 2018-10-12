@@ -6,8 +6,6 @@ spec:
   dbName: db3
   dbRoleName: user3
   dbRolePassword: swordfish
-  dbExtensions:
-    - hstore
   extraSQL: |
     CREATE TABLE example (
       user_id serial PRIMARY KEY,

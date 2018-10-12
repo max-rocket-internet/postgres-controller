@@ -1,8 +1,10 @@
 # Kubernetes postgres-controller
 
-A simple controller and helm chart to manage Postgres databases in an existing Postgres instance from Kubernetes. Once installed, you can define a `PostgresDatabase` resource and it will be created in your Postgres database host. Great for use with AWS RDS.
+  <img src="https://raw.githubusercontent.com/max-rocket-internet/postgres-controller/master/img/k8s-logo.png" width="100"> + <img src="https://raw.githubusercontent.com/max-rocket-internet/postgres-controller/master/img/postgres-logo.png" width="100">
 
-Example resource that will create a database and role with access:
+A simple k8s controller to create PostgresSQL databases. Once you install the controller and point it at your existing PostgresSQL database instance, you can create `PostgresDatabase` resource in k8s and the controller will create a database in your PostgresSQL instance, create a role that with access to this database and optionally install any extensions and run extra SQL commands.
+
+Example resource:
 
 ```yaml
 apiVersion: postgresql.org/v1
@@ -15,9 +17,11 @@ spec:
   dbRolePassword: swordfish
 ```
 
-### Install the controller
+Pull requests welcome.
 
-Use the included [Helm](https://helm.sh/) chart and be sure you set the host, username and password for your Postgres instance:
+### Installation
+
+Use the included [Helm](https://helm.sh/) chart and set the host, username and password for your PostgresSQL instance:
 
 ```
 helm install ./chart --set postgres.host=my-rds-instance.rds.amazonaws.com --set postgres.user=root --set postgres.password=admin_password
@@ -25,11 +29,11 @@ helm install ./chart --set postgres.host=my-rds-instance.rds.amazonaws.com --set
 
 ### Examples
 
-See [examples](examples).
+See [examples](examples) to for how to add extensions, extra SQL commands and also how to drop databases when the k8s resource is deleted.
 
-### Test locally
+### Testing
 
-Start a postgres container:
+To test locally, start a postgres container:
 
 ```
 docker run -d -p 127.0.0.1:5432:5432 -e POSTGRES_PASSWORD=postgres postgres:9.6
@@ -43,7 +47,7 @@ export DB_PASSWORD=postgres
 export DB_USER=postgres
 ```
 
-Run the controller
+Start the controller, it will use your default kubectl configuration/context:
 
 ```
 ./controller.py

@@ -55,6 +55,7 @@ def get_config():
             'port': os.getenv('DB_PORT', 5432),
             'user': os.environ['DB_USER'],
             'password': os.environ['DB_PASSWORD'],
+            'database': 'postgres',
         },
         'log_level': os.getenv('LOG_LEVEL', 'info'),
     }
@@ -98,8 +99,6 @@ def process_event(crds, obj, event_type, runtime_config):
 
 
     logger.debug('Processing event: {0}'.format(json.dumps(obj, indent=1)))
-
-    print(event_type)
 
     if event_type == 'MODIFIED':
         logger.debug('Ignoring modification for {0} DB {1}, not supported'.format(metadata.get('name'), spec['dbName']))
