@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
         except client.rest.ApiException as e:
             if e.status == 404:
-                print('Custom Resource Definition not created in cluster')
+                logger.error('Custom Resource Definition not created in cluster')
                 break
             else:
                 raise e

@@ -11,13 +11,6 @@ import logging.handlers
 logger = logging.getLogger()
 
 
-def convert_to_bool(value):
-    '''
-    Converts a value to a boolean
-    '''
-    return value in [1, 'true', 'True', 'yes', '1', True]
-
-
 def create_logger(log_level):
     '''
     Creates logging object
@@ -93,15 +86,15 @@ def process_event(crds, obj, event_type, runtime_config):
     '''
     Processes events in order to create or drop databases
     '''
-    logger = logging.getLogger()
     spec = obj.get('spec')
     metadata = obj.get('metadata')
+    k8s_resource_name = metadata.get('name')
 
 
     logger.debug('Processing event: {0}'.format(json.dumps(obj, indent=1)))
 
     if event_type == 'MODIFIED':
-        logger.debug('Ignoring modification for {0} DB {1}, not supported'.format(metadata.get('name'), spec['dbName']))
+        logger.debug('Ignoring modification for {0} DB {1}, not supported'.format(k8s_resource_name, spec['dbName']))
         return
 
     conn = psycopg2.connect(**runtime_config['db_credentials'])
@@ -110,33 +103,33 @@ def process_event(crds, obj, event_type, runtime_config):
 
 
     if event_type == 'DELETED':
-        logger.info('Deleting PostgresDatabase {0}, dbName {1}'.format(metadata.get('name'), spec['dbName']))
+        logger.info('Deleting PostgresDatabase {0}, dbName {1}'.format(k8s_resource_name, spec['dbName']))
         try:
             drop_db = spec['onDeletion']['dropDB']
         except KeyError:
             drop_db = False
         if drop_db:
-            logger.info('Dropping {0} DB {1}'.format(metadata.get('name'), spec['dbName']))
+            logger.info('Dropping {0} DB {1}'.format(k8s_resource_name, spec['dbName']))
             try:
                 cur.execute("DROP DATABASE {0};".format(spec['dbName']))
             except psycopg2.OperationalError as e:
-                logger.info('Dropping of {0} DB {1} failed {2}'.format(metadata.get('name'), spec['dbName'], e))
+                logger.error('Dropping of {0} DB {1} failed {2}'.format(k8s_resource_name, spec['dbName'], e))
         else:
-            logger.info('Ignoring deletion for {0} database {1}, onDeletion setting not enabled'.format(metadata.get('name'), spec['dbName']))
+            logger.info('Ignoring deletion for {0} database {1}, onDeletion setting not enabled'.format(k8s_resource_name, spec['dbName']))
 
         try:
             drop_role = spec['onDeletion']['dropRole']
         except KeyError:
             drop_role = False
         if drop_role:
-            logger.info('Dropping {0} role {1}'.format(metadata.get('name'), spec['dbRoleName']))
+            logger.info('Dropping {0} role {1}'.format(k8s_resource_name, spec['dbRoleName']))
             cur.execute("DROP ROLE {0};".format(spec['dbRoleName']))
         else:
-            logger.info('Ignoring deletion for {0} role {1}, onDeletion setting not enabled'.format(metadata.get('name'), spec['dbName']))
+            logger.info('Ignoring deletion for {0} role {1}, onDeletion setting not enabled'.format(k8s_resource_name, spec['dbName']))
 
 
     elif event_type == 'ADDED':
-        logger.info('Adding PostgresDatabase {0}, dbName {1}'.format(metadata.get('name'), spec['dbName']))
+        logger.info('Adding PostgresDatabase {0}, dbName {1}'.format(k8s_resource_name, spec['dbName']))
         db_created = create_db_if_not_exists(cur, spec['dbName'])
         role_created = create_role_not_exists(cur, spec['dbRoleName'], spec['dbRolePassword'])
         cur.execute("GRANT ALL PRIVILEGES ON DATABASE {0} to {1};".format(spec['dbName'], spec['dbRoleName']))
@@ -157,9 +150,9 @@ def process_event(crds, obj, event_type, runtime_config):
                     db_cur.execute(spec['extraSQL'])
                     db_conn.commit()
                 except psycopg2.OperationalError as e:
-                    logger.error('OperationalError when running extraSQL from {0} for DB {1}: {2}'.format(metadata.get('name'), spec['dbName'], e))
+                    logger.error('OperationalError when running extraSQL from {0} for DB {1}: {2}'.format(k8s_resource_name, spec['dbName'], e))
                 except psycopg2.ProgrammingError as e:
-                    logger.error('ProgrammingError when running extraSQL from {0} for DB {1}: {2}'.format(metadata.get('name'), spec['dbName'], e))
+                    logger.error('ProgrammingError when running extraSQL from {0} for DB {1}: {2}'.format(k8s_resource_name, spec['dbName'], e))
 
             db_cur.close()
 

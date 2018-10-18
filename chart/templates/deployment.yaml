@@ -25,6 +25,7 @@ spec:
         app: {{ template "postgres-controller.name" . }}
         release: {{ .Release.Name }}
     spec:
+      serviceAccountName: {{ template "postgres-controller.serviceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -59,4 +60,3 @@ spec:
       affinity:
 {{ toYaml .Values.affinity | indent 8 }}
     {{- end }}
-      serviceAccountName: {{ template "postgres-controller.serviceAccountName" . }}
