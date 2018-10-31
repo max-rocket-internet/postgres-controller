@@ -48,6 +48,8 @@ spec:
               type: string
             dbRolePassword:
               type: string
+            dbInstanceId:
+              type: string
             dbExtensions:
               type: array
               items:

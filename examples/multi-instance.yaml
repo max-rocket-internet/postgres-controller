@@ -1,0 +1,22 @@
+# If dbInstanceId is not in the resource, the controller will look for a `default` key
+apiVersion: postgresql.org/v1
+kind: PostgresDatabase
+metadata:
+  name: app1
+spec:
+  dbName: db1
+  dbRoleName: user1
+  dbRolePassword: swordfish
+  # This string must correspond to a key in one of `postgres_instances` in the config file
+  dbInstanceId: default
+---
+apiVersion: postgresql.org/v1
+kind: PostgresDatabase
+metadata:
+  name: app2
+spec:
+  dbName: db2
+  dbRoleName: user2
+  dbRolePassword: swordfish
+  # This string must correspond to a key in one of `postgres_instances` in the config file
+  dbInstanceId: instance2

@@ -21,15 +21,17 @@ Pull requests welcome.
 
 ### Installation
 
-Use the included [Helm](https://helm.sh/) chart and set the host, username and password for your PostgresSQL instance:
+Use the included [Helm](https://helm.sh/) chart and set the host, username and password for your default PostgresSQL instance:
 
 ```
-helm install ./chart --set postgres.host=my-rds-instance.rds.amazonaws.com --set postgres.user=root --set postgres.password=admin_password
+helm install ./chart --set config.postgres_instances.default.host=my-rds-instance.rds.amazonaws.com --set config.postgres_instances.default.user=root --set config.postgres_instances.default.password=admin_password
 ```
 
 ### Examples
 
 See [examples](examples) to for how to add extensions, extra SQL commands and also how to drop databases when the k8s resource is deleted.
+
+See [example-config.yaml](example-config.yaml) for example chart values file.
 
 ### Testing
 
@@ -39,18 +41,10 @@ To test locally, start a postgres container:
 docker run -d -p 127.0.0.1:5432:5432 -e POSTGRES_PASSWORD=postgres postgres:9.6
 ```
 
-Export required environment variables:
-
-```
-export DB_HOST=localhost
-export DB_PASSWORD=postgres
-export DB_USER=postgres
-```
-
 Start the controller, it will use your default kubectl configuration/context:
 
 ```
-./controller.py
+./controller.py --log-level=debug --config-file=example-config.yaml
 ```
 
 Create or change some resources:

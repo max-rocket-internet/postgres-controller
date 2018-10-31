@@ -31,23 +31,19 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: DB_HOST
-              value: "{{ .Values.postgres.host }}"
-            - name: DB_PORT
-              value: "{{ .Values.postgres.port }}"
-            - name: DB_USER
-              value: "{{ .Values.postgres.user }}"
-            - name: DROP_ON_DELETION
-              value: "{{ .Values.postgres.drop_on_deletion }}"
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "postgres-controller.fullname" . }}
-                  key: db_password
+            - name: CONFIG_FILE
+              value: "/config/postgres-controller.yaml"
             - name: LOG_LEVEL
               value: "{{ .Values.log_level }}"
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "postgres-controller.fullname" . }}
     {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}

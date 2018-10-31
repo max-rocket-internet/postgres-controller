@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-from kubernetes import client, watch
 import json
-from functions import get_config, process_event, create_logger
+from kubernetes import client, watch
+from functions import PostgresControllerConfig, process_event, create_logger
 
 
-runtime_config = get_config()
+runtime_config = PostgresControllerConfig()
 crds = client.CustomObjectsApi()
-logger = create_logger(log_level=runtime_config['log_level'])
+logger = create_logger(log_level=runtime_config.args.log_level)
 
 
 resource_version = ''
@@ -25,6 +25,7 @@ if __name__ == "__main__":
 
                 if not metadata or not spec:
                     logger.error('No metadata or spec in object, skipping: {0}'.format(json.dumps(obj, indent=1)))
+                    resource_version = ''
                     continue
 
                 if metadata['resourceVersion'] is not None:

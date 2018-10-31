@@ -1,10 +1,12 @@
-postgres:
-  host: ""
-  user: ""
-  password: ""
-  port: "5432"
-  db_name: postgres
-  drop_on_deletion: false
+# Controller configuration
+# Contains list of Postgres instances. Should have at least a `default` instance
+config:
+  postgres_instances:
+    # default:
+      # host: ""
+      # user: ""
+      # password: ""
+      # port: 5432
 
 log_level: 'info'
 
@@ -12,7 +14,7 @@ replicaCount: 1
 
 image:
   repository: k8scontrollers/postgres
-  tag: 0.1
+  tag: 0.2
   pullPolicy: IfNotPresent
 
 nameOverride: ""

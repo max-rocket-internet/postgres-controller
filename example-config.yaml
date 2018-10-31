@@ -1,0 +1,12 @@
+# Example config file for controller
+postgres_instances:
+  default:
+    host: localhost
+    user: postgres
+    password: postgres
+    port: 5432
+  instance2:
+    host: localhost
+    user: postgres
+    password: postgres
+    port: 5432
