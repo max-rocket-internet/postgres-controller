@@ -5,6 +5,7 @@
 - Add update events of `PostgresDatabase` resources (only beta in k8s 1.11)
 - Error checking and exception catching x1000
 - Reduce docker image size
+- Handle SIGTERM
 - Fix error:
 
     ```

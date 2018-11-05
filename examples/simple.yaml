@@ -1,10 +1,10 @@
 apiVersion: postgresql.org/v1
 kind: PostgresDatabase
 metadata:
-  name: app1
+  name: app3
 spec:
-  dbName: db1
-  dbRoleName: user1
+  dbName: db3
+  dbRoleName: user3
   dbRolePassword: swordfish
   onDeletion:
     # Whether to drop the databse when the resource is deleted

@@ -1,10 +1,10 @@
 apiVersion: postgresql.org/v1
 kind: PostgresDatabase
 metadata:
-  name: app3
+  name: app5
 spec:
-  dbName: db3
-  dbRoleName: user3
+  dbName: db5
+  dbRoleName: user5
   dbRolePassword: swordfish
   extraSQL: |
     CREATE TABLE example (

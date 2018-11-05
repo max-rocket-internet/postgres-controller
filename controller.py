@@ -26,7 +26,7 @@ if __name__ == "__main__":
                 if not metadata or not spec:
                     logger.error('No metadata or spec in object, skipping: {0}'.format(json.dumps(obj, indent=1)))
                     resource_version = ''
-                    continue
+                    break
 
                 if metadata['resourceVersion'] is not None:
                     resource_version = metadata['resourceVersion']
