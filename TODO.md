@@ -6,22 +6,10 @@
 - Error checking and exception catching x1000
 - Reduce docker image size
 - Handle SIGTERM
-- Fix error:
-
-    ```
-    {"time":"2018-10-31 16:00:51,748", "level":"ERROR", "message":"No metadata or spec in object, skipping: {
-     "kind": "Status",
-     "apiVersion": "v1",
-     "metadata": {},
-     "status": "Failure",
-     "message": "too old resource version: 93971 (1325590)",
-     "reason": "Gone",
-     "code": 410
-    }"}
-    ```
+- Write a class for handling events
 
 Features:
 
 - Add CRD for managing Postgres roles
-- Allow different access permissions for role
+- Allow granular permissions for dbRoleName
 - Handle `MODIFIED` type of events?

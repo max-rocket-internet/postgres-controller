@@ -2,7 +2,7 @@
 
 import json
 from kubernetes import client, watch
-from functions import PostgresControllerConfig, process_event, create_logger
+from functions import PostgresControllerConfig, process_event, create_logger, parse_too_old_failure
 
 
 runtime_config = PostgresControllerConfig()
@@ -22,11 +22,20 @@ if __name__ == "__main__":
                 obj = event["object"]
                 metadata = obj.get('metadata')
                 spec = obj.get('spec')
+                code = obj.get('code')
+
+                if code == 410:
+                    new_version = parse_too_old_failure(obj.get('message'))
+                    if new_version == None:
+                        resource_version = ''
+                        break
+                    else:
+                        resource_version = new_version
+                        logger.error('Updating resource version to {0} due to "too old" error'.format(new_version))
 
                 if not metadata or not spec:
                     logger.error('No metadata or spec in object, skipping: {0}'.format(json.dumps(obj, indent=1)))
-                    resource_version = ''
-                    break
+                    continue
 
                 if metadata['resourceVersion'] is not None:
                     resource_version = metadata['resourceVersion']
