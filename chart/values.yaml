@@ -14,7 +14,7 @@ replicaCount: 1
 
 image:
   repository: k8scontrollers/postgres
-  tag: 0.2
+  tag: 0.3
   pullPolicy: IfNotPresent
 
 nameOverride: ""
