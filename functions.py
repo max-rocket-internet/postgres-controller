@@ -15,16 +15,28 @@ import yaml
 logger = logging.getLogger()
 
 
+class K8sLoggingFilter(logging.Filter):
+    '''
+    A small filter to add add extra logging data if not present
+    '''
+    def filter(self, record):
+        if not hasattr(record, 'resource_name'):
+            record.resource_name = '-'
+        return True
+
+
 def create_logger(log_level):
     '''
     Creates logging object
     '''
-    json_format = logging.Formatter('{"time":"%(asctime)s", "level":"%(levelname)s", "message":"%(message)s"}')
+    json_format = logging.Formatter('{"time":"%(asctime)s", "level":"%(levelname)s", "resource_name":"%(resource_name)s", "message":"%(message)s"}')
+    filter = K8sLoggingFilter()
     logger = logging.getLogger()
     stdout_handler = logging.StreamHandler()
     stdout_handler.setLevel(logging.DEBUG)
     stdout_handler.setFormatter(json_format)
     logger.addHandler(stdout_handler)
+    logger.addFilter(filter)
 
     if log_level == 'debug':
         logger.setLevel(logging.DEBUG)
@@ -56,7 +68,7 @@ class PostgresControllerConfig(object):
             sys.exit()
 
         with open(self.args.config_file) as fp:
-            self.yaml_config = yaml.load(fp)
+            self.yaml_config = yaml.safe_load(fp)
             if 'postgres_instances' not in self.yaml_config or len(self.yaml_config['postgres_instances'].keys()) < 1:
                 raise Exception('No postgres instances in configuration')
 
@@ -106,10 +118,8 @@ def create_db_if_not_exists(cur, db_name):
     cur.execute("SELECT 1 FROM pg_database WHERE datname = '{}';".format(db_name))
     if not cur.fetchone():
         cur.execute("CREATE DATABASE {};".format(db_name))
-        logger.info('Database {0} created'.format(db_name))
         return True
     else:
-        logger.info('Database {0} already exists'.format(db_name))
         return False
 
 
@@ -120,10 +130,8 @@ def create_role_not_exists(cur, role_name, role_password):
     cur.execute("SELECT 1 FROM pg_roles WHERE rolname = '{}';".format(role_name))
     if not cur.fetchone():
         cur.execute("CREATE ROLE {0} PASSWORD '{1}' LOGIN;".format(role_name, role_password))
-        logger.info('Role {0} created'.format(role_name))
         return True
     else:
-        logger.info('Role {0} already exists'.format(role_name))
         return False
 
 
@@ -135,17 +143,18 @@ def process_event(crds, obj, event_type, runtime_config):
     metadata = obj.get('metadata')
     k8s_resource_name = metadata.get('name')
 
+    logger = logging.LoggerAdapter(logging.getLogger(), {'resource_name': k8s_resource_name})
 
     logger.debug('Processing event {0}: {1}'.format(event_type, json.dumps(obj, indent=1)))
 
     if event_type == 'MODIFIED':
-        logger.debug('Ignoring modification for {0} DB {1}, not supported'.format(k8s_resource_name, spec['dbName']))
+        logger.debug('Ignoring modification for DB {0}, not supported'.format(spec['dbName']))
         return
 
     db_credentials = runtime_config.get_credentials(instance_id=spec.get('dbInstanceId'))
 
     if db_credentials == None:
-        logger.error('No corresponding postgres instance in configuration for PostgresDatabase {0}, instance id {1}'.format(k8s_resource_name, spec.get('dbInstanceId')))
+        logger.error('No corresponding postgres instance in configuration for instance id {0}'.format(spec.get('dbInstanceId')))
         return
 
     try:
@@ -167,11 +176,11 @@ def process_event(crds, obj, event_type, runtime_config):
             try:
                 cur.execute("DROP DATABASE {0};".format(spec['dbName']))
             except psycopg2.OperationalError as e:
-                logger.error('Dropping of PostgresDatabase {0} dbName {1} failed: {2}'.format(k8s_resource_name, spec['dbName'], e))
+                logger.error('Dropping of dbName {0} failed: {1}'.format(spec['dbName'], e))
             else:
-                logger.info('Dropped PostgresDatabase {0} dbName {1}'.format(k8s_resource_name, spec['dbName']))
+                logger.info('Dropped dbName {0}'.format(spec['dbName']))
         else:
-            logger.info('Ignoring deletion for PostgresDatabase {0} dbName {1}, onDeletion setting not enabled'.format(k8s_resource_name, spec['dbName']))
+            logger.info('Ignoring deletion for dbName {0}, onDeletion setting not enabled'.format(spec['dbName']))
 
         try:
             drop_role = spec['onDeletion']['dropRole']
@@ -182,23 +191,34 @@ def process_event(crds, obj, event_type, runtime_config):
             try:
                 cur.execute("DROP ROLE {0};".format(spec['dbRoleName']))
             except Exception as e:
-                logger.error('Error when dropping role {0} for PostgresDatabase {1}: {2}'.format(spec['dbRoleName'], k8s_resource_name, e))
+                logger.error('Error when dropping role {0}: {1}'.format(spec['dbRoleName'], e))
             else:
-                logger.info('Dropped role {0} for PostgresDatabase {1}'.format(spec['dbRoleName'], k8s_resource_name))
+                logger.info('Dropped role {0}'.format(spec['dbRoleName']))
         else:
-            logger.info('Ignoring deletion of role {0} for {1} PostgresDatabase, onDeletion setting not enabled'.format(spec['dbRoleName'], k8s_resource_name))
+            logger.info('Ignoring deletion of role {0}, onDeletion setting not enabled'.format(spec['dbRoleName']))
 
-        logger.info('Deleted PostgresDatabase {0}'.format(k8s_resource_name))
+        logger.info('Deleted')
 
 
     elif event_type == 'ADDED':
-        logger.info('Adding PostgresDatabase {0}, dbName {1}'.format(k8s_resource_name, spec['dbName']))
+        logger.info('Adding dbName {0}'.format(spec['dbName']))
+
         db_created = create_db_if_not_exists(cur, spec['dbName'])
+        if db_created:
+            logger.info('Database {0} created'.format(spec['dbName']))
+        else:
+            logger.info('Database {0} already exists'.format(spec['dbName']))
+
         role_created = create_role_not_exists(cur, spec['dbRoleName'], spec['dbRolePassword'])
+        if role_created:
+            logger.info('Role {0} created'.format(spec['dbRoleName']))
+        else:
+            logger.info('Role {0} already exists'.format(spec['dbRoleName']))
+
         cur.execute("GRANT ALL PRIVILEGES ON DATABASE {0} to {1};".format(spec['dbName'], spec['dbRoleName']))
 
         if ('dbExtensions' in spec or 'extraSQL' in spec) and not db_created:
-            logger.info('Ingoring extra SQL commands for PostgresDatabase {0}, dbName {1} as it is already created'.format(k8s_resource_name, spec['dbName']))
+            logger.info('Ingoring extra SQL commands dbName {0} as it is already created'.format(spec['dbName']))
 
         elif ('dbExtensions' in spec or 'extraSQL' in spec) and db_created:
             user_credentials = {
@@ -222,24 +242,24 @@ def process_event(crds, obj, event_type, runtime_config):
                 db_cur = db_conn.cursor()
                 db_conn.set_session(autocommit=True)
                 for ext in spec['dbExtensions']:
-                    logger.info('Creating extension {0} for PostgresDatabase {1} in dbName {2}'.format(ext, k8s_resource_name, spec['dbName']))
+                    logger.info('Creating extension {0} in dbName {1}'.format(ext, spec['dbName']))
                     db_cur.execute('CREATE EXTENSION IF NOT EXISTS "{0}";'.format(ext))
 
             if 'extraSQL' in spec:
                 db_conn = psycopg2.connect(**user_credentials)
                 db_cur = db_conn.cursor()
                 db_conn.set_session(autocommit=False)
-                logger.info('Running extra SQL commands for PostgresDatabase {0} in dbName {1}'.format(k8s_resource_name, spec['dbName']))
+                logger.info('Running extra SQL commands for in dbName {0}'.format(spec['dbName']))
                 try:
                     db_cur.execute(spec['extraSQL'])
                     db_conn.commit()
                 except psycopg2.OperationalError as e:
-                    logger.error('OperationalError when running extraSQL for PostgresDatabase {0}, dbName {1}: {2}'.format(k8s_resource_name, spec['dbName'], e))
+                    logger.error('OperationalError when running extraSQL for dbName {0}: {1}'.format(spec['dbName'], e))
                 except psycopg2.ProgrammingError as e:
-                    logger.error('ProgrammingError when running extraSQL for PostgresDatabase {0}, dbName {1}: {2}'.format(k8s_resource_name, spec['dbName'], e))
+                    logger.error('ProgrammingError when running extraSQL for dbName {0}: {1}'.format(spec['dbName'], e))
 
             db_cur.close()
 
-        logger.info('Added PostgresDatabase {0}, dbName {1}'.format(k8s_resource_name, spec['dbName']))
+        logger.info('Added PostgresDatabase dbName {0}'.format(spec['dbName']))
 
     cur.close()

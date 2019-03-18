@@ -51,6 +51,9 @@ if __name__ == "__main__":
             if e.status == 404:
                 logger.error('Custom Resource Definition not created in cluster')
                 break
+            elif e.status == 401:
+                logger.error('Unauthorized')
+                sys.exit(1)
             else:
                 raise e
         except KeyboardInterrupt:
