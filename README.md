@@ -27,6 +27,8 @@ Use the included [Helm](https://helm.sh/) chart and set the host, username and p
 helm install ./chart --set config.postgres_instances.default.host=my-rds-instance.rds.amazonaws.com --set config.postgres_instances.default.user=root --set config.postgres_instances.default.password=admin_password
 ```
 
+Or use the docker image: [maxrocketinternet/postgres-controller](https://hub.docker.com/r/maxrocketinternet/postgres-controller)
+
 ### Examples
 
 See [examples](examples) to for how to add extensions, extra SQL commands and also how to drop databases when the k8s resource is deleted.

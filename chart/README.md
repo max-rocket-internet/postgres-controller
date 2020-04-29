@@ -30,8 +30,8 @@ The following table lists the configurable parameters for this chart and their d
 |--------------------|------------------------------------------------------------------|--------------------------------|
 | `annotations`      | Optional deployment annotations                                  | `{}`                           |
 | `affinity`         | Map of node/pod affinities                                       | `{}`                           |
-| `image.repository` | Image                                                            | `k8scontrollers/postgres`      |
-| `image.tag`        | Image tag                                                        | `0.2`                          |
+| `image.repository` | Image                                                            | `maxrocketinternet/postgres-controller`      |
+| `image.tag`        | Image tag                                                        | `0.5`                          |
 | `image.pullPolicy` | Image pull policy                                                | `IfNotPresent`                 |
 | `rbac.create`      | RBAC                                                             | `true`                         |
 | `resources`        | Pod resource requests and limits                                 | `{}`                           |
